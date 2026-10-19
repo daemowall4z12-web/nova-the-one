@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NOVA – Your AI Companion</title>
+<meta name="description" content="NOVA is an animated AI companion with changeable characters, a smart timetable, friendly voice chat and device reminders.">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Rajdhani:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--c:#39ff6a;--bg:#05060a;--p:#0c0f17;--t:#e8f0ff;--m:#7d8aa6}
+*{box-sizing:border-box;margin:0}
+body{background:radial-gradient(circle at 50% 0,color-mix(in srgb,var(--c) 18%,transparent),transparent 55%),var(--bg);color:var(--t);font:18px/1.35 Rajdhani,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+main{width:100%;max-width:760px;padding:14px;display:flex;flex-direction:column;gap:12px;height:100vh}
+h1{font:800 22px Orbitron;letter-spacing:.12em;color:var(--c);text-shadow:0 0 14px var(--c)}
+.top{display:flex;justify-content:space-between;align-items:center}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+button,input,select,textarea{font:inherit;color:var(--t);background:var(--p);border:1px solid #232a3b;border-radius:10px;padding:8px 12px}
+button{cursor:pointer}button:hover,button.on{border-color:var(--c);box-shadow:0 0 10px color-mix(in srgb,var(--c) 50%,transparent)}
+:focus-visible{outline:2px solid var(--c);outline-offset:2px}
+#stage{display:flex;justify-content:center;position:relative;height:190px}
+#av{width:190px;height:190px;position:relative}
+#av svg,.imgav{width:100%;height:100%}
+.imgav{border-radius:50%;background-size:cover;background-position:center;border:2px solid var(--c);box-shadow:0 0 30px var(--c)}
+.ring{position:absolute;inset:-6px;border:2px dashed var(--c);border-radius:50%;opacity:.5;animation:spin 18s linear infinite}
+.ring.two{inset:-16px;border-style:dotted;animation-duration:30s;animation-direction:reverse;opacity:.3}
+@keyframes spin{to{transform:rotate(360deg)}}
+.glow{animation:pulse 3s ease-in-out infinite}@keyframes pulse{50%{filter:drop-shadow(0 0 14px var(--c))}}
+.eye{animation:blink 5s infinite;transform-origin:center;transform-box:fill-box}@keyframes blink{95%,100%{transform:scaleY(.1)}}
+.mouth{transform-origin:100px 142px}.talking .mouth{animation:talk .25s infinite alternate}@keyframes talk{to{transform:scaleY(1.7)}}
+.talking .ring{border-color:#fff;opacity:.9}
+.tabs{display:flex;gap:6px}.tabs button{flex:1;font-family:Orbitron;font-size:13px}
+.view{display:none;flex:1;min-height:0;flex-direction:column;gap:10px}.view.on{display:flex}
+#log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px}
+.b{max-width:85%;padding:9px 13px;border-radius:14px;background:var(--p);border:1px solid #1d2434;white-space:pre-wrap}
+.b.u{align-self:flex-end;background:color-mix(in srgb,var(--c) 22%,var(--p));border-color:var(--c)}
+.in{display:flex;gap:8px}.in input{flex:1}
+.list>div{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--p);border-radius:10px;margin-bottom:6px;border-left:3px solid var(--c)}
+.view p,.view small{color:var(--m)}
+#chars button{padding:6px 10px;font-size:15px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--c);color:#000;padding:10px 18px;border-radius:12px;display:none;font-weight:600}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body>
+<main>
+ <div class="top"><h1>NOVA</h1>
+  <div class="row"><button id="voice"></button><button id="mode"></button></div></div>
+ <div id="stage"><div id="av"></div></div>
+ <div class="row" id="chars" style="justify-content:center"></div>
+ <div class="tabs"><button data-v="chat" class="on">Chat</button><button data-v="tt">Timetable</button><button data-v="dev">Devices</button><button data-v="new">New character</button></div>
+
+ <section class="view on" id="chat">
+  <div id="log"></div>
+  <div class="row" id="quick"></div>
+  <div class="in"><input id="msg" placeholder="Ask anything…" autocomplete="off"><button id="mic" title="Talk">🎙</button><button id="go">Send</button></div>
+ </section>
+
+ <section class="view" id="tt">
+  <div class="in"><input id="tm" type="time"><input id="tn" placeholder="What needs doing?"><button id="ta">Add</button></div>
+  <div class="list" id="tl"></div>
+  <small>Your character reminds you out loud when the time comes. Keep this tab open.</small>
+ </section>
+
+ <section class="view" id="dev">
+  <p>Reminders and device commands go to your smart-home hub (Home Assistant, IFTTT, Make or any webhook).</p>
+  <input id="hook" placeholder="Webhook URL (https://…)">
+  <div class="row"><button id="hs">Save</button><button id="ht">Send test</button><button id="notif">Enable notifications</button></div>
+  <small>Say “turn on the light” in chat and the character sends that command to your hook. For reminders on every device, open this site on each one and use “Add to Home Screen”.</small>
+ </section>
+
+ <section class="view" id="new">
+  <input id="cn" placeholder="Character name">
+  <textarea id="cp" rows="3" placeholder="Personality (e.g. calm wizard who loves tea)"></textarea>
+  <div class="row"><input id="cc" type="color" value="#a855f7" aria-label="Glow colour"><input id="ci" type="file" accept="image/*"></div>
+  <small>Upload any picture you like for the face, or leave it empty for the animated mask.</small>
+  <button id="cs">Save character</button>
+ </section>
+</main><div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,'0');
+const P=[
+ {id:'sym',name:'Shadow Symbiote',c:'#39ff6a',s:'horns',p:'You are a dark, loyal, very hungry sidekick. You say "we" instead of "I". Funny, a little menacing, fiercely protective of the user.'},
+ {id:'sor',name:'Mystic Sorcerer',c:'#ffb020',s:'hood',p:'You are a calm, wise master of the mystic arts. Measured, deep, a little dramatic.'},
+ {id:'web',name:'Web Hero',c:'#ff3355',s:'mask',p:'You are a witty, upbeat, quippy friendly-neighbourhood hero who cracks jokes under pressure.'},
+ {id:'arm',name:'Iron Armor',c:'#4df0ff',s:'helm',p:'You are a sarcastic genius inventor in a powered suit. Confident, fast, brilliant.'},
+ {id:'mon',name:'Iron Monarch',c:'#7dff8a',s:'crown',p:'You are a regal, proud ruler who speaks grandly but is secretly loyal to the user.'}];
+let S=Object.assign({custom:[],pid:'sym',tt:[],mode:'friend',voice:false,hook:'',fired:{}},(()=>{try{return JSON.parse(localStorage.getItem('nova')||'{}')}catch(e){return{}}})());
+const save=()=>{try{localStorage.setItem('nova',JSON.stringify(S))}catch(e){}};
+const all=()=>[...P,...S.custom],cur=()=>all().find(p=>p.id===S.pid)||P[0];
+let hist=[];
+
+function face(p){
+ if(p.img)return`<div class="ring"></div><div class="ring two"></div><div class="imgav glow"></div>`.replace('class="imgav glow"',`class="imgav glow" style="background-image:url('${p.img}')"`);
+ const c=p.c,x={
+ horns:`<path d="M52 60L40 12 82 44ZM148 60L160 12 118 44Z" fill="#0a0d14" stroke="${c}"/>`,
+ hood:`<path d="M20 190C10 60 60 6 100 6s90 54 80 184Z" fill="#14100a" stroke="${c}" stroke-width="2"/><circle cx="100" cy="30" r="7" fill="none" stroke="${c}"/>`,
+ mask:`<g stroke="${c}" stroke-width=".8" opacity=".6"><path d="M100 30V172M100 100L40 60M100 100L160 60M100 100L36 130M100 100L164 130M100 100L60 170M100 100L140 170"/><circle cx="100" cy="100" r="30" fill="none"/><circle cx="100" cy="100" r="58" fill="none"/></g>`,
+ helm:`<path d="M44 90h112v16H44z" fill="${c}" opacity=".12"/><path d="M100 24V60" stroke="${c}"/>`,
+ crown:`<path d="M52 44L66 12l17 22 17-26 17 26 17-22 14 32Z" fill="#101a10" stroke="${c}" stroke-width="2"/>`}[p.s]||'';
+ const bg=p.s==='hood'?'':`<ellipse cx="100" cy="106" rx="62" ry="72" fill="#080b12" stroke="${c}" stroke-width="2"/>`;
+ return`<div class="ring"></div><div class="ring two"></div><svg viewBox="0 0 200 200" class="glow" role="img" aria-label="${p.name}">
+ ${x.includes('M20 190')?x:''}${bg}${x.includes('M20 190')?'':x}
+ <ellipse cx="100" cy="100" rx="52" ry="62" fill="#05070c" ${p.s==='hood'?'stroke="'+c+'" stroke-opacity=".4"':'opacity="0"'}/>
+ <g fill="${c}" style="filter:drop-shadow(0 0 6px ${c})"><path class="eye" d="M58 92Q80 80 92 104 74 108 58 92Z"/><path class="eye" d="M142 92Q120 80 108 104 126 108 142 92Z"/></g>
+ <g class="mouth"><path d="M66 140Q100 160 134 140Q100 130 66 140Z" fill="#12060a" stroke="${c}"/><path d="M70 140l6 9 6-8 6 9 6-8 6 9 6-8 6 9 6-8 6 9 6-9" fill="none" stroke="#fff" stroke-width="2"/></g></svg>`;
+}
+function draw(){const p=cur();document.documentElement.style.setProperty('--c',p.c);$('#av').innerHTML=face(p);
+ $('#chars').innerHTML=all().map(q=>`<button data-id="${q.id}" class="${q.id===p.id?'on':''}">${q.name}</button>`).join('');
+ $('#voice').textContent=S.voice?'🔊 Voice on':'🔇 Voice off';$('#mode').textContent=S.mode==='friend'?'😎 Friend':'💼 Pro';
+ $('#hook').value=S.hook;drawTT()}
+$('#chars').onclick=e=>{const id=e.target.dataset.id;if(id){S.pid=id;save();draw();add('ai',`${cur().name} online.`,true)}};
+$('#voice').onclick=()=>{S.voice=!S.voice;save();draw()};
+$('#mode').onclick=()=>{S.mode=S.mode==='friend'?'pro':'friend';save();draw()};
+document.querySelector('.tabs').onclick=e=>{const v=e.target.dataset.v;if(!v)return;
+ document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b===e.target));
+ document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id===v))};
+
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',4000)}
+function say(t){if(!S.voice||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.replace(/\[\[.*?\]\]/g,''));
+ u.onstart=()=>$('#av').classList.add('talking');u.onend=u.onerror=()=>$('#av').classList.remove('talking');speechSynthesis.speak(u)}
+function add(w,t,speak){const d=document.createElement('div');d.className='b '+(w==='u'?'u':'');d.textContent=t;$('#log').append(d);$('#log').scrollTop=1e9;if(speak)say(t)}
+
+function sys(){const n=new Date(),today=S.tt.slice().sort((a,b)=>a.t>b.t?1:-1).map(i=>i.t+' '+i.n).join('; ')||'none';
+ return cur().p+'\nYou are the user\'s personal AI companion. '+(S.mode==='friend'?'Talk like a close friend: casual, warm, short, ask how they are.':'Be concise, professional and practical.')+
+ ' Answer any question. Keep replies under 80 words unless asked for more. Stay in character but never be harmful.\nNow: '+n.toLocaleString()+'\nUser timetable today: '+today+
+ '\nIf the user asks to control a smart device, include [[device:short command]] in your reply.'}
+async function send(text){text=(text||$('#msg').value).trim();if(!text)return;$('#msg').value='';add('u',text);hist.push({role:'user',content:text});
+ const w=document.createElement('div');w.className='b';w.textContent='…';$('#log').append(w);
+ try{let r={ok:true},d;if(window.claude&&claude.use){const sm=await claude.use('sample');if(!sm)throw new Error('Allow Claude access when asked, then send again.');const o=await sm(hist.map((m,i)=>i?m:{role:'user',content:'[Instructions]\n'+sys()+'\n[End]\n\n'+m.content}),{cache:false});d={text:o.text}}else{r=await fetch(location.hostname.includes('netlify')?'/.netlify/functions/chat':'/api/chat',{method:'POST',body:JSON.stringify({messages:hist,system:sys()})});try{d=await r.json()}catch(x){throw new Error('Chat server not found. Chat works only after you deploy the zip to Netlify with GROQ_API_KEY set.')}}
+  if(!r.ok||d.error)throw new Error(d.error||r.status);hist.push({role:'assistant',content:d.text});w.textContent=d.text.replace(/\[\[.*?\]\]/g,'').trim();say(d.text);
+  const m=d.text.match(/\[\[device:(.+?)\]\]/);if(m)hook({event:'command',command:m[1]},true)}
+ catch(e){hist.pop();w.textContent=e instanceof TypeError?'Chat is offline here. It works only on your Netlify site, after you deploy the zip and add ANTHROPIC_API_KEY.':'Error: '+e.message}$('#log').scrollTop=1e9}
+$('#go').onclick=()=>send();$('#msg').onkeydown=e=>{if(e.key==='Enter')send()};
+$('#quick').innerHTML=['Plan my day','Top priority','Focus tip','Workout plan','Tell me a joke'].map(q=>`<button>${q}</button>`).join('');
+$('#quick').onclick=e=>{if(e.target.tagName==='BUTTON')send(e.target.textContent)};
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+$('#mic').onclick=()=>{if(!SR)return toast('Voice input needs Chrome or Edge');const r=new SR();r.onresult=e=>send(e.results[0][0].transcript);r.start();toast('Listening…')};
+
+function drawTT(){$('#tl').innerHTML=S.tt.slice().sort((a,b)=>a.t>b.t?1:-1).map(i=>`<div><span>${i.t} – ${i.n}</span><button data-d="${i.id}">✕</button></div>`).join('')||'<p>Nothing scheduled yet.</p>'}
+$('#ta').onclick=()=>{const t=$('#tm').value,n=$('#tn').value.trim();if(!t||!n)return toast('Pick a time and a task');S.tt.push({id:Date.now(),t,n});$('#tn').value='';save();drawTT()};
+$('#tl').onclick=e=>{const d=e.target.dataset.d;if(d){S.tt=S.tt.filter(i=>i.id!=d);save();drawTT()}};
+setInterval(()=>{const n=new Date(),hm=pad(n.getHours())+':'+pad(n.getMinutes()),day=n.toDateString();
+ S.tt.forEach(i=>{const k=day+i.id;if(i.t===hm&&!S.fired[k]){S.fired[k]=1;save();const m=`Time for: ${i.n}`;toast(m);add('ai',m,true);
+  if(window.Notification&&Notification.permission==='granted')new Notification(cur().name,{body:m});hook({event:'reminder',title:i.n})}})},15000);
+
+async function hook(body,loud){if(!S.hook){if(loud)toast('Add a webhook in Devices first');return}
+ try{await fetch(S.hook,{method:'POST',mode:'no-cors',body:JSON.stringify(body)});if(loud)toast('Sent to your device hub')}catch(e){toast('Webhook failed')}}
+$('#hs').onclick=()=>{S.hook=$('#hook').value.trim();save();toast('Saved')};
+$('#ht').onclick=()=>hook({event:'test'},true);
+$('#notif').onclick=()=>window.Notification?Notification.requestPermission().then(p=>toast('Notifications: '+p)):toast('Not supported here');
+
+$('#cs').onclick=()=>{const n=$('#cn').value.trim();if(!n)return toast('Give your character a name');
+ const f=$('#ci').files[0],mk=img=>{S.custom.push({id:'c'+Date.now(),name:n,c:$('#cc').value,s:'mask',img,p:$('#cp').value||'You are a loyal, friendly companion named '+n+'.'});S.pid=S.custom.at(-1).id;save();draw();toast(n+' created');document.querySelector('[data-v=chat]').click()};
+ if(!f)return mk();const im=new Image,u=URL.createObjectURL(f);im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d'),s=Math.min(im.width,im.height);
+  x.drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,256,256);mk(c.toDataURL('image/jpeg',.8))};im.src=u};
+
+draw();add('ai','Hey. Pick a character above, tell me what needs doing, or just talk to me.');
+</script></body></html>
